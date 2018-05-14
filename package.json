@@ -6,7 +6,7 @@
   "scripts": {
     "format": "prettier-standard '**/*.js'",
     "lint": "standard index.js",
-    "start": "npx babel index.js  --out-file build/index.js && node build/index.js",
+    "start": "npx babel src  --out-dir build && node build/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jakub Kottnauer",

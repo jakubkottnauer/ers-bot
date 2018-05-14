@@ -3,25 +3,7 @@ import 'babel-polyfill'
 import moment from 'moment'
 import puppeteer from 'puppeteer'
 
-const URL = 'https://ersworkout.isportsystem.cz'
-
-const cookies = {
-  kuba: {
-    email: '',
-    password: '',
-    PHPSESSID: ''
-  },
-  tyna: {
-    email: '',
-    password: '',
-    PHPSESSID: ''
-  }
-}
-
-const dayTimePairs = [
-  [5, '17:00', 'Lněničková'], // Friday 5pm
-  [7, '17:00', 'Přibyl'] // Sunday 5pm
-]
+import { dayTimePairs, cookies, url } from './config.js'
 
 // Pass index of the next day to find the next instance of the day. 1 is Monday, 7 is Sunday
 const getNextDayInstance = day =>
@@ -59,7 +41,7 @@ const selectTraining = async (page, time, name) => {
     const text = await (await training.getProperty('innerHTML')).jsonValue()
 
     if (text.indexOf(`>${time}`) > 0 && text.indexOf(name) > 0) {
-      console.log(text)
+      console.log('Found training', text)
       await training.click()
       await page.waitFor(WAIT_FOR)
       break
@@ -73,11 +55,10 @@ const checkTerms = async page => {
 }
 
 const confirm = async page => {
-  const confirmButton = (await page.$$('.ui-dialog-buttonset button'))[1] // Cancel button, change to 0 for real confirmation!
-  //await page.screenshot({ path: Math.random() + 'yes.png' })
-  // await confirmButton.click()
+  const confirmButton = (await page.$$('.ui-dialog-buttonset button'))[0]
+  await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
+  await confirmButton.click()
 }
-
 ;(async () => {
   const browser = await puppeteer.launch()
 
@@ -97,7 +78,7 @@ const confirm = async page => {
 
     for (let pair of dayTimePairs) {
       const nextDay = getNextDayInstance(pair[0])
-      await page.goto(URL)
+      await page.goto(url)
       await page.waitFor(WAIT_FOR)
 
       await selectDateInCalendar(page, nextDay.date(), nextDay.month())
