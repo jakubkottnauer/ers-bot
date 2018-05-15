@@ -37,16 +37,19 @@ const selectDateInCalendar = async (page, day, month) => {
 
 const selectTraining = async (page, time, name) => {
   const trainingsOnDay = await page.$$('a.slot')
+  let found = false
   for (let training of trainingsOnDay) {
     const text = await (await training.getProperty('innerHTML')).jsonValue()
 
     if (text.indexOf(`>${time}`) > 0 && text.indexOf(name) > 0) {
-      console.log('Found training', text)
+      found = true
       await training.click()
       await page.waitFor(WAIT_FOR)
       break
     }
   }
+
+  return found
 }
 
 const checkTerms = async page => {
@@ -82,7 +85,14 @@ const confirm = async page => {
       await page.waitFor(WAIT_FOR)
 
       await selectDateInCalendar(page, nextDay.date(), nextDay.month())
-      await selectTraining(page, pair[1], pair[2])
+      const trainingFound = await selectTraining(page, pair[1], pair[2])
+      if (trainingFound) {
+        console.log(`Training ${pair} OK`)
+      } else {
+        console.log(`Training ${pair} not found!`)
+        continue
+      }
+
       await checkTerms(page)
       await confirm(page)
     }
