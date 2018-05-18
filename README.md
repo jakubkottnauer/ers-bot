@@ -5,4 +5,4 @@ This is a simple bot for booking workouts at my favorite gym. Because ain't nobo
 
 Just run `yarn` to install the necessary dependencies, then `cp src/config.sample.js src/config.js` and fill in the details.
 
-Run the app via `yarn start`.
+Build the app via `yarn build` to build and then run `yarn start` to start it.

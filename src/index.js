@@ -2,8 +2,10 @@ import 'babel-core/register'
 import 'babel-polyfill'
 import moment from 'moment'
 import puppeteer from 'puppeteer'
-
 import { dayTimePairs, cookies, url } from './config.js'
+
+const WAIT_FOR = 1000
+const IS_TEST = true
 
 // Pass index of the next day to find the next instance of the day. 1 is Monday, 7 is Sunday
 const getNextDayInstance = day =>
@@ -13,14 +15,30 @@ const getNextDayInstance = day =>
       .add(1, 'weeks')
       .isoWeekday(day)
 
-const WAIT_FOR = 1000
+const nextMonth = async () => {
+  const month = await page.$('a[data-handler="next"]')
+  await month.click()
+  await page.waitFor(WAIT_FOR)
+}
+
+const prevMonth = async () => {
+  const month = await page.$('a[data-handler="prev"]')
+  await month.click()
+  await page.waitFor(WAIT_FOR)
+}
 
 const selectDateInCalendar = async (page, day, month) => {
   const isCorrectMonth = (await page.$$(`td[data-month="${month}"]`)).length > 0
+
   if (!isCorrectMonth) {
-    const nextMonth = await page.$$(`td[data-handler="next"]`)
-    await nextMonth.click()
-    await page.waitFor(WAIT_FOR)
+    await nextMonth()
+
+    const isCorrectNow = (await page.$$(`td[data-month="${month}"]`)).length > 0
+    if (!isCorrectNow) {
+      // Move two months back
+      await prevMonth()
+      await prevMonth()
+    }
   }
 
   const calendarElems = await page.$$('.ui-datepicker-calendar tbody a')
@@ -60,12 +78,19 @@ const checkTerms = async page => {
 const confirm = async page => {
   const confirmButton = (await page.$$('.ui-dialog-buttonset button'))[0]
   await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
-  await confirmButton.click()
+  if (!IS_TEST) {
+    await confirmButton.click()
+    console.log('  -> Training booked')
+  }
 }
 ;(async () => {
+  console.log(IS_TEST ? 'TEST MODE\n' : 'PROD MODE')
+
   const browser = await puppeteer.launch()
 
   for (let client of Object.keys(cookies)) {
+    console.log(`Running for "${client}"\n-----------------`)
+
     const page = await browser.newPage()
 
     await page.setCookie(
@@ -87,7 +112,7 @@ const confirm = async page => {
       await selectDateInCalendar(page, nextDay.date(), nextDay.month())
       const trainingFound = await selectTraining(page, pair[1], pair[2])
       if (trainingFound) {
-        console.log(`Training ${pair} OK`)
+        console.log(`Training ${pair} found`)
       } else {
         console.log(`Training ${pair} not found!`)
         continue
