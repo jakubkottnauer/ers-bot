@@ -88,40 +88,42 @@ const confirm = async page => {
 
   const browser = await puppeteer.launch()
 
-  for (let client of Object.keys(cookies)) {
-    console.log(`Running for "${client}"\n-----------------`)
+  await Promise.all(
+    Object.keys(cookies).map(async client => {
+      console.log(`Running for "${client}"\n-----------------`)
 
-    const page = await browser.newPage()
+      const page = await browser.newPage()
 
-    await page.setCookie(
-      ...['PHPSESSID', 'email', 'password'].map(c => ({
-        name: c,
-        value: cookies[client][c],
-        expires: -1,
-        domain: 'ersworkout.isportsystem.cz',
-        path: '/',
-        session: true
-      }))
-    )
+      await page.setCookie(
+        ...['PHPSESSID', 'email', 'password'].map(c => ({
+          name: c,
+          value: cookies[client][c],
+          expires: -1,
+          domain: 'ersworkout.isportsystem.cz',
+          path: '/',
+          session: true
+        }))
+      )
 
-    for (let pair of dayTimePairs) {
-      const nextDay = getNextDayInstance(pair[0])
-      await page.goto(url)
-      await page.waitFor(WAIT_FOR)
+      for (let pair of dayTimePairs) {
+        const nextDay = getNextDayInstance(pair[0])
+        await page.goto(url)
+        await page.waitFor(WAIT_FOR)
 
-      await selectDateInCalendar(page, nextDay.date(), nextDay.month())
-      const trainingFound = await selectTraining(page, pair[1], pair[2])
-      if (trainingFound) {
-        console.log(`Training ${pair} found`)
-      } else {
-        console.log(`Training ${pair} not found!`)
-        continue
+        await selectDateInCalendar(page, nextDay.date(), nextDay.month())
+        const trainingFound = await selectTraining(page, pair[1], pair[2])
+        if (trainingFound) {
+          console.log(`${client} - training ${pair} found`)
+        } else {
+          console.log(`${client} - training ${pair} not found!`)
+          continue
+        }
+
+        await checkTerms(page)
+        await confirm(page)
       }
-
-      await checkTerms(page)
-      await confirm(page)
-    }
-  }
+    })
+  )
 
   await browser.close()
 })()
