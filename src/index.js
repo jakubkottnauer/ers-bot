@@ -15,13 +15,13 @@ const getNextDayInstance = day =>
       .add(1, 'weeks')
       .isoWeekday(day)
 
-const nextMonth = async () => {
+const nextMonth = async (page) => {
   const month = await page.$('a[data-handler="next"]')
   await month.click()
   await page.waitFor(WAIT_FOR)
 }
 
-const prevMonth = async () => {
+const prevMonth = async (page) => {
   const month = await page.$('a[data-handler="prev"]')
   await month.click()
   await page.waitFor(WAIT_FOR)
@@ -31,13 +31,13 @@ const selectDateInCalendar = async (page, day, month) => {
   const isCorrectMonth = (await page.$$(`td[data-month="${month}"]`)).length > 0
 
   if (!isCorrectMonth) {
-    await nextMonth()
+    await nextMonth(page)
 
     const isCorrectNow = (await page.$$(`td[data-month="${month}"]`)).length > 0
     if (!isCorrectNow) {
       // Move two months back
-      await prevMonth()
-      await prevMonth()
+      await prevMonth(page)
+      await prevMonth(page)
     }
   }
 
