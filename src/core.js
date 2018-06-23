@@ -115,13 +115,12 @@ const selectTraining = async (page, time, name) => {
 
 const checkTerms = async page => {
   const terms = await page.$('input#terms')
-  await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
   await terms.click()
 }
 
 const confirm = async (page, isTest) => {
   const confirmButton = (await page.$$('.ui-dialog-buttonset button'))[0]
-  await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
+  // await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
   if (!isTest) {
     await confirmButton.click()
     console.log('  -> Training booked')
