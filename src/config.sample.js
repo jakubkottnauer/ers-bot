@@ -1,11 +1,11 @@
-export const dayTimePairs = [
-  [5, '6:00', 'Newman'], // Training on Friday 6am with Newman
-  [7, '17:00', 'Novak'] // Training on Sunday 5pm with Novak
-]
+// Shortcuts and full names in the system, enables you to run the app with e.g. `-w hon`
+export const whoMap = {
+  hon: 'Novak'
+}
 
-// Data copies from cookies after loggin in
+// Data copied from cookies after logging in
 export const cookies = {
-  myfirstname: {
+  myname: {
     email: '',
     password: '',
     PHPSESSID: ''

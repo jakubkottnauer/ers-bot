@@ -2,10 +2,28 @@ import 'babel-core/register'
 import 'babel-polyfill'
 import moment from 'moment'
 import puppeteer from 'puppeteer'
-import { dayTimePairs, cookies, url } from './config.js'
+import { whoMap, cookies, url } from './config.js'
+import program from 'commander'
 
-const WAIT_FOR = 1000
-const IS_TEST = true
+const WAIT_FOR = 500
+let isTest = true
+
+const daysMap = {
+  fr: 5,
+  fri: 5,
+  mo: 1,
+  mon: 1,
+  sa: 6,
+  sat: 6,
+  su: 7,
+  sun: 7,
+  th: 4,
+  thu: 4,
+  tu: 2,
+  tue: 2,
+  we: 3,
+  wed: 3
+}
 
 // Pass index of the next day to find the next instance of the day. 1 is Monday, 7 is Sunday
 const getNextDayInstance = day =>
@@ -15,13 +33,13 @@ const getNextDayInstance = day =>
       .add(1, 'weeks')
       .isoWeekday(day)
 
-const nextMonth = async (page) => {
+const nextMonth = async page => {
   const month = await page.$('a[data-handler="next"]')
   await month.click()
   await page.waitFor(WAIT_FOR)
 }
 
-const prevMonth = async (page) => {
+const prevMonth = async page => {
   const month = await page.$('a[data-handler="prev"]')
   await month.click()
   await page.waitFor(WAIT_FOR)
@@ -72,58 +90,66 @@ const selectTraining = async (page, time, name) => {
 
 const checkTerms = async page => {
   const terms = await page.$('input#terms')
+  await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
   await terms.click()
 }
 
 const confirm = async page => {
   const confirmButton = (await page.$$('.ui-dialog-buttonset button'))[0]
   await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
-  if (!IS_TEST) {
+  if (!isTest) {
     await confirmButton.click()
     console.log('  -> Training booked')
   }
 }
+const fixTime = p => (p.indexOf(':') !== -1 ? p : `${p}:00`)
+const fixTrainer = p => whoMap[p]
+const fixDay = p => daysMap[p]
 ;(async () => {
-  console.log(IS_TEST ? 'TEST MODE\n' : 'PROD MODE')
+  program
+    .option('-p, --prod', 'Production mode')
+    .option('-d, --day [day]', 'Day', fixDay)
+    .option('-t, --time [time]', 'Time', fixTime)
+    .option('-w, --who [trainer]', 'Trainer', fixTrainer)
+    .parse(process.argv)
+
+  isTest = !program.prod
 
   const browser = await puppeteer.launch()
 
-  await Promise.all(
-    Object.keys(cookies).map(async client => {
-      console.log(`Running for "${client}"\n-----------------`)
+  for (let client of Object.keys(cookies)) {
+    console.log(`Running for "${client}"\n-----------------`)
 
-      const page = await browser.newPage()
+    const page = await browser.newPage()
 
-      await page.setCookie(
-        ...['PHPSESSID', 'email', 'password'].map(c => ({
-          name: c,
-          value: cookies[client][c],
-          expires: -1,
-          domain: 'ersworkout.isportsystem.cz',
-          path: '/',
-          session: true
-        }))
-      )
+    await page.setCookie(
+      ...['PHPSESSID', 'email', 'password'].map(c => ({
+        name: c,
+        value: cookies[client][c],
+        expires: -1,
+        domain: 'ersworkout.isportsystem.cz',
+        path: '/',
+        session: true
+      }))
+    )
 
-      for (let pair of dayTimePairs) {
-        const nextDay = getNextDayInstance(pair[0])
-        await page.goto(url)
-        await page.waitFor(WAIT_FOR)
+    const nextDay = getNextDayInstance(program.day)
+    await page.goto(url)
+    await page.waitFor(WAIT_FOR)
 
-        await selectDateInCalendar(page, nextDay.date(), nextDay.month())
-        const trainingFound = await selectTraining(page, pair[1], pair[2])
-        if (trainingFound) {
-          console.log(`${client} - training ${pair} found`)
-        } else {
-          console.log(`${client} - training ${pair} not found!`)
-          continue
-        }
+    await selectDateInCalendar(page, nextDay.date(), nextDay.month())
+    const trainingFound = await selectTraining(page, program.time, program.who)
+    if (trainingFound) {
+      console.log(`${client} - training with ${program.who} found`)
+    } else {
+      console.log(`${client} - training with ${program.who} not found!`)
+      return
+    }
 
-        await checkTerms(page)
-        await confirm(page)
-      }
-    })
-  )
+    await checkTerms(page)
+    await confirm(page)
+    await page.waitFor(WAIT_FOR)
+  }
 
   await browser.close()
 })()
