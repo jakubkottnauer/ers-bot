@@ -5,6 +5,9 @@ provider:
   runtime: nodejs8.10
   memorySize: 512
 
+package:
+  excludeDevDependencies: false
+
 functions:
   api:
     handler: build/aws.handler

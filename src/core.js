@@ -30,6 +30,7 @@ export default async function book(day, time, who, isTest = true) {
     )
 
     const nextDay = getNextDayInstance(day)
+
     await page.goto(url)
     await page.waitFor(WAIT_FOR)
 

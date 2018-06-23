@@ -1,4 +1,7 @@
-import 'babel-core/register'
+require('babel-register')({
+  cache: false // AWS is readonly
+})
+
 import 'babel-polyfill'
 
 import book from './core'
