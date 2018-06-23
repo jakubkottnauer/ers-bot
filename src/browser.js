@@ -1,5 +1,6 @@
 import launchChrome from '@serverless-chrome/lambda'
 import puppeteer from 'puppeteer'
+import request from 'request'
 
 export default async function resolveBrowser () {
   if (process.env.APP_ENV === 'local') {
@@ -7,7 +8,7 @@ export default async function resolveBrowser () {
   } else {
     // AWS Lambda
     const chrome = await launchChrome()
-    const debuggerUrl = await this.getDebuggerUrl(chrome.url)
+    const debuggerUrl = await getDebuggerUrl(chrome.url)
 
     return await puppeteer.connect({
       browserWSEndpoint: debuggerUrl

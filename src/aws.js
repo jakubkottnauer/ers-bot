@@ -1,7 +1,4 @@
-require('babel-register')({
-  cache: false // AWS is readonly
-})
-
+import 'babel-register'
 import 'babel-polyfill'
 
 import book from './core'
@@ -38,14 +35,17 @@ function buildResponse (sessionAttributes, speechletResponse) {
 
 // --------------- Functions that control the skill's behavior -----------------------
 
-function getWelcomeResponse (callback) {
+async function getWelcomeResponse (callback) {
   // If we wanted to initialize the session to have some attributes we could add those here.
   const sessionAttributes = {}
   const cardTitle = 'Welcome'
   const speechOutput =
-    "So you don' wanna be a fat motherfucker and would like to book a training at ERS workout? What would you like to do?"
+    "So you don't wanna be a fat motherfucker and would like to book a training at ERS workout? What would you like to do?"
   const repromptText = 'What do you wanna do?'
   const shouldEndSession = false
+
+  await book(7, '20:00', 'Přibyl', true)
+  console.log('Succesfully booked maybe?')
 
   callback(
     sessionAttributes,
@@ -93,8 +93,7 @@ async function bookTraining (intent, session, callback) {
   const time = timeSlot.value
 
   const speechOutput = `You told me that you want to book a workout on ${day} at ${time} with ${trainer}. Gonna go ahead and book for ya`
-  await book(7, '20:00', 'Přibyl', true)
-  console.log('Succesfully booked maybe?')
+
   let repromptText = ''
   let sessionAttributes = createAttribute(day, time, trainer)
   const shouldEndSession = false
@@ -126,7 +125,7 @@ function onSessionStarted (sessionStartedRequest, session) {
 /**
  * Called when the user launches the skill without specifying what they want.
  */
-function onLaunch (launchRequest, session, callback) {
+async function onLaunch (launchRequest, session, callback) {
   console.log(
     `onLaunch requestId=${launchRequest.requestId}, sessionId=${
       session.sessionId
@@ -134,7 +133,7 @@ function onLaunch (launchRequest, session, callback) {
   )
 
   // Dispatch to your skill's launch.
-  getWelcomeResponse(callback)
+  await getWelcomeResponse(callback)
 }
 
 /**
@@ -205,7 +204,7 @@ export const handler = async (event, context, callback) => {
     }
 
     if (event.request.type === 'LaunchRequest') {
-      onLaunch(
+      await onLaunch(
         event.request,
         event.session,
         (sessionAttributes, speechletResponse) => {
