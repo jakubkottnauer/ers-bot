@@ -1,28 +1,53 @@
-import 'babel-core/register'
-import 'babel-polyfill'
 import moment from 'moment'
-import puppeteer from 'puppeteer'
-import { whoMap, cookies, url } from './config.js'
-import program from 'commander'
+import { cookies, url } from './config'
+import resolveBrowser from './browser'
 
-const WAIT_FOR = 500
-let isTest = true
+const WAIT_FOR = 300
 
-const daysMap = {
-  fr: 5,
-  fri: 5,
-  mo: 1,
-  mon: 1,
-  sa: 6,
-  sat: 6,
-  su: 7,
-  sun: 7,
-  th: 4,
-  thu: 4,
-  tu: 2,
-  tue: 2,
-  we: 3,
-  wed: 3
+/**
+ * Params are expected in a normalized format, that is:
+ * day - number between 1 and 7
+ * time - time in 17:00 format
+ * who - surname of the trainer
+ */
+export default async function book(day, time, who, isTest = true) {
+  const browser = await resolveBrowser()
+
+  for (let client of Object.keys(cookies)) {
+    console.log(`Running for "${client}"\n-----------------`)
+
+    const page = await browser.newPage()
+
+    await page.setCookie(
+      ...['PHPSESSID', 'email', 'password'].map(c => ({
+        name: c,
+        value: cookies[client][c],
+        expires: -1,
+        domain: 'ersworkout.isportsystem.cz',
+        path: '/',
+        session: true
+      }))
+    )
+
+    const nextDay = getNextDayInstance(day)
+    await page.goto(url)
+    await page.waitFor(WAIT_FOR)
+
+    await selectDateInCalendar(page, nextDay.date(), nextDay.month())
+    const trainingFound = await selectTraining(page, time, who)
+    if (trainingFound) {
+      console.log(`${client} - training with ${who} found`)
+    } else {
+      console.log(`${client} - training with ${who} not found!`)
+      return
+    }
+
+    await checkTerms(page)
+    await confirm(page, isTest)
+    await page.waitFor(WAIT_FOR)
+  }
+
+  await browser.close()
 }
 
 // Pass index of the next day to find the next instance of the day. 1 is Monday, 7 is Sunday
@@ -94,7 +119,7 @@ const checkTerms = async page => {
   await terms.click()
 }
 
-const confirm = async page => {
+const confirm = async (page, isTest) => {
   const confirmButton = (await page.$$('.ui-dialog-buttonset button'))[0]
   await page.screenshot({ path: `screenshots/confirm_${Math.random()}.png` })
   if (!isTest) {
@@ -102,54 +127,3 @@ const confirm = async page => {
     console.log('  -> Training booked')
   }
 }
-const fixTime = p => (p.indexOf(':') !== -1 ? p : `${p}:00`)
-const fixTrainer = p => whoMap[p]
-const fixDay = p => daysMap[p]
-;(async () => {
-  program
-    .option('-p, --prod', 'Production mode')
-    .option('-d, --day [day]', 'Day', fixDay)
-    .option('-t, --time [time]', 'Time', fixTime)
-    .option('-w, --who [trainer]', 'Trainer', fixTrainer)
-    .parse(process.argv)
-
-  isTest = !program.prod
-
-  const browser = await puppeteer.launch()
-
-  for (let client of Object.keys(cookies)) {
-    console.log(`Running for "${client}"\n-----------------`)
-
-    const page = await browser.newPage()
-
-    await page.setCookie(
-      ...['PHPSESSID', 'email', 'password'].map(c => ({
-        name: c,
-        value: cookies[client][c],
-        expires: -1,
-        domain: 'ersworkout.isportsystem.cz',
-        path: '/',
-        session: true
-      }))
-    )
-
-    const nextDay = getNextDayInstance(program.day)
-    await page.goto(url)
-    await page.waitFor(WAIT_FOR)
-
-    await selectDateInCalendar(page, nextDay.date(), nextDay.month())
-    const trainingFound = await selectTraining(page, program.time, program.who)
-    if (trainingFound) {
-      console.log(`${client} - training with ${program.who} found`)
-    } else {
-      console.log(`${client} - training with ${program.who} not found!`)
-      return
-    }
-
-    await checkTerms(page)
-    await confirm(page)
-    await page.waitFor(WAIT_FOR)
-  }
-
-  await browser.close()
-})()

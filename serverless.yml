@@ -1,0 +1,11 @@
+service: ers-bot
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  memorySize: 512
+
+functions:
+  api:
+    handler: build/aws.handler
+    timeout: 120

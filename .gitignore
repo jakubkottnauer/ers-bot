@@ -5,3 +5,4 @@ yarn-error.log
 build
 *.png
 src/config.js
+.serverless
