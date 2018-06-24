@@ -44,9 +44,6 @@ async function getWelcomeResponse (callback) {
   const repromptText = 'What do you wanna do?'
   const shouldEndSession = false
 
-  await book(7, '20:00', 'Přibyl', true)
-  console.log('Succesfully booked maybe?')
-
   callback(
     sessionAttributes,
     buildSpeechletResponse(
@@ -92,11 +89,22 @@ async function bookTraining (intent, session, callback) {
   const trainer = trainerSlot.value
   const time = timeSlot.value
 
-  const speechOutput = `You told me that you want to book a workout on ${day} at ${time} with ${trainer}. Gonna go ahead and book for ya`
 
+  console.log(day, time, trainer)
+  const result = await book(day, time, trainer, true)
+
+  let speechOutput = `You told me that you want to book a workout on ${day} at ${time} with ${trainer}. This is just a test mode so I am going to go ahead and try to book it for you.`
   let repromptText = ''
   let sessionAttributes = createAttribute(day, time, trainer)
-  const shouldEndSession = false
+  let shouldEndSession = false
+
+  if (result.type === 'UNKNOWN_TRAINER') {
+    speechOutput = `Oops, seems like I wasn't able to find a trainer called ${trainer}.`
+    shouldEndSession = true
+  } else if (result.type === 'SUCCESS') {
+    speechOutput += ` I have booked the training for both ${result.data.join(' and ')}.`
+    shouldEndSession = true
+  }
 
   callback(
     sessionAttributes,

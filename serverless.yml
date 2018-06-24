@@ -2,13 +2,22 @@ service: ers-bot
 
 provider:
   name: aws
-  runtime: nodejs8.10
-  memorySize: 256
+  runtime: nodejs6.10
+  memorySize: 768
+  environment:
+    BABEL_CACHE_PATH: /tmp/babelregister
+    APP_ENV: AWS
+    SCRAPE_WAIT: 1000
 
 package:
   excludeDevDependencies: false
+  exclude:
+    - node_modules/puppeteer/.local-chromium/** # exclude puppeteer chrome if exists
+  
+plugins:
+  - serverless-plugin-chrome
 
 functions:
   api:
     handler: build/aws.handler
-    timeout: 10
+    timeout: 30

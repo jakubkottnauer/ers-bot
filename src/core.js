@@ -1,16 +1,52 @@
 import moment from 'moment'
-import { cookies, url } from './config'
+import { cookies, url, whoMap } from './config'
 import resolveBrowser from './browser'
 
-const WAIT_FOR = 300
+const WAIT_FOR = parseInt(process.env.SCRAPE_WAIT || 300, 10)
+
+const daysMap = {
+  fr: 5,
+  fri: 5,
+  friday: 5,
+  mo: 1,
+  mon: 1,
+  monday: 1,
+  sa: 6,
+  sat: 6,
+  saturday: 6,
+  su: 7,
+  sun: 7,
+  sunday: 7,
+  th: 4,
+  thu: 4,
+  thursday: 4,
+  tu: 2,
+  tue: 2,
+  tuesday: 2,
+  we: 3,
+  wed: 3,
+  wednesday: 3
+}
+
+const createResultMessage = (type, data) => ({
+  type,
+  data
+})
 
 /**
  * Params are expected in a normalized format, that is:
- * day - number between 1 and 7
+ * day - name of the day - Mo, Mon or Monday
  * time - time in 17:00 format
  * who - surname of the trainer
  */
-export default async function book(day, time, who, isTest = true) {
+export default async function book (dayName, time, whoNickname, isTest = true) {
+  const day = daysMap[dayName.toLowerCase()]
+  const who = whoMap[whoNickname.toLowerCase()]
+
+  if (!who) {
+    return createResultMessage('UNKNOWN_TRAINER')
+  }
+
   const browser = await resolveBrowser()
 
   for (let client of Object.keys(cookies)) {
@@ -32,7 +68,7 @@ export default async function book(day, time, who, isTest = true) {
     const nextDay = getNextDayInstance(day)
 
     await page.goto(url)
-    await page.waitFor(WAIT_FOR)
+    // await page.waitFor(WAIT_FOR)
 
     await selectDateInCalendar(page, nextDay.date(), nextDay.month())
     const trainingFound = await selectTraining(page, time, who)
@@ -49,6 +85,8 @@ export default async function book(day, time, who, isTest = true) {
   }
 
   await browser.close()
+
+  return createResultMessage('SUCCESS', Object.keys(cookies))
 }
 
 // Pass index of the next day to find the next instance of the day. 1 is Monday, 7 is Sunday
