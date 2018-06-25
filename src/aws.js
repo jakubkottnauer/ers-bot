@@ -89,7 +89,6 @@ async function bookTraining (intent, session, callback) {
   const trainer = trainerSlot.value
   const time = timeSlot.value
 
-
   console.log(day, time, trainer)
   const result = await book(day, time, trainer, true)
 
@@ -102,7 +101,9 @@ async function bookTraining (intent, session, callback) {
     speechOutput = `Oops, seems like I wasn't able to find a trainer called ${trainer}.`
     shouldEndSession = true
   } else if (result.type === 'SUCCESS') {
-    speechOutput += ` I have booked the training for both ${result.data.join(' and ')}.`
+    speechOutput += ` I have booked the training for both ${result.data.join(
+      ' and '
+    )}.`
     shouldEndSession = true
   }
 

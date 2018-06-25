@@ -11,11 +11,12 @@ export default async function resolveBrowser () {
       .set('Content-Type', 'application/json')
 
     const endpoint = response.body.webSocketDebuggerUrl
-
-    return await puppeteer.connect({
+    const browser = await puppeteer.connect({
       browserWSEndpoint: endpoint
     })
+    return { browser, chrome }
   } else {
-    return await puppeteer.launch()
+    const browser = await puppeteer.launch()
+    return { browser }
   }
 }

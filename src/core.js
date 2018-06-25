@@ -2,7 +2,7 @@ import moment from 'moment'
 import { cookies, url, whoMap } from './config'
 import resolveBrowser from './browser'
 
-const WAIT_FOR = parseInt(process.env.SCRAPE_WAIT || 300, 10)
+const WAIT_FOR = parseInt(process.env.SCRAPE_WAIT || 1500, 10)
 
 const daysMap = {
   fr: 5,
@@ -47,7 +47,7 @@ export default async function book (dayName, time, whoNickname, isTest = true) {
     return createResultMessage('UNKNOWN_TRAINER')
   }
 
-  const browser = await resolveBrowser()
+  const { browser, chrome } = await resolveBrowser()
 
   for (let client of Object.keys(cookies)) {
     console.log(`Running for "${client}"\n-----------------`)
@@ -85,7 +85,9 @@ export default async function book (dayName, time, whoNickname, isTest = true) {
   }
 
   await browser.close()
-
+  if (chrome) {
+    setTimeout(() => chrome.kill(), 0)
+  }
   return createResultMessage('SUCCESS', Object.keys(cookies))
 }
 

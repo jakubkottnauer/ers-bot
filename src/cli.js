@@ -5,7 +5,6 @@ import program from 'commander'
 import book from './core'
 
 const fixTime = p => (p.indexOf(':') !== -1 ? p : `${p}:00`)
-
 ;(async () => {
   program
     .option('-p, --prod', 'Production mode')
