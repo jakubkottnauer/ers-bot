@@ -47,6 +47,9 @@ export default async function book (dayName, time, whoNickname, isTest = true) {
     return createResultMessage('UNKNOWN_TRAINER')
   }
 
+  const nextDay = getNextDayInstance(day)
+  console.log('Looking for day', nextDay)
+
   const { browser, chrome } = await resolveBrowser()
 
   for (let client of Object.keys(cookies)) {
@@ -64,8 +67,6 @@ export default async function book (dayName, time, whoNickname, isTest = true) {
         session: true
       }))
     )
-
-    const nextDay = getNextDayInstance(day)
 
     await page.goto(url)
     // await page.waitFor(WAIT_FOR)
@@ -93,7 +94,7 @@ export default async function book (dayName, time, whoNickname, isTest = true) {
 
 // Pass index of the next day to find the next instance of the day. 1 is Monday, 7 is Sunday
 const getNextDayInstance = day =>
-  moment().isoWeekday() < day
+  moment().isoWeekday() <= day
     ? moment().isoWeekday(day)
     : moment()
       .add(1, 'weeks')
